@@ -2,10 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import {
   researchProgrammes,
   generatePredictions,
+  generateCrisisPredictions,
   calculateProgressiveness,
   evaluateProgrammes,
+  determinePhase,
+  crisisInterpretations,
   type ResearchProgramme,
-  type Prediction
+  type Prediction,
+  type CrisisType,
+  type RegimePhase
 } from '@/lib/lakatos';
 
 export async function POST(request: NextRequest) {
@@ -127,6 +132,67 @@ export async function POST(request: NextRequest) {
 
         const evaluation = evaluateProgrammes(programmes);
         return NextResponse.json(evaluation);
+      }
+
+      case 'generateCrisisPredictions': {
+        // Generate predictions for how each model interprets a crisis
+        const { crisisType, scores: crisisScores } = body;
+        if (!crisisType || !crisisScores) {
+          return NextResponse.json({ error: 'crisisType and scores required' }, { status: 400 });
+        }
+
+        // Calculate average score and determine phase
+        const avgScore = Object.values(crisisScores as Record<string, number>).reduce((a, b) => a + b, 0) /
+                         Object.keys(crisisScores as Record<string, number>).length;
+        const phase = determinePhase(avgScore, 'stable'); // Default to stable trend for now
+
+        // Generate predictions for all models
+        const allPredictions: Record<string, Prediction[]> = {};
+        for (const modelIdKey of Object.keys(researchProgrammes)) {
+          const predictions = generateCrisisPredictions(
+            modelIdKey,
+            crisisType as CrisisType,
+            phase,
+            crisisScores as Record<string, number>
+          );
+          if (predictions.length > 0) {
+            allPredictions[modelIdKey] = predictions;
+          }
+        }
+
+        // Also return the interpretations for context
+        const interpretations: Record<string, { duringConsolidation: string; duringFailure: string; keyVariable: string } | null> = {};
+        for (const modelIdKey of Object.keys(researchProgrammes)) {
+          interpretations[modelIdKey] = crisisInterpretations[modelIdKey]?.[crisisType as CrisisType] || null;
+        }
+
+        return NextResponse.json({
+          predictions: allPredictions,
+          phase,
+          avgScore: Math.round(avgScore),
+          interpretations
+        });
+      }
+
+      case 'getPhaseInfo': {
+        // Get current phase and point-of-no-return info
+        const { scores: phaseScores } = body;
+        if (!phaseScores) {
+          return NextResponse.json({ error: 'scores required' }, { status: 400 });
+        }
+
+        const avgScore = Object.values(phaseScores as Record<string, number>).reduce((a, b) => a + b, 0) /
+                         Object.keys(phaseScores as Record<string, number>).length;
+        const phase = determinePhase(avgScore, 'stable');
+
+        // Import point of no return thresholds
+        const { pointOfNoReturn } = await import('@/lib/lakatos');
+
+        return NextResponse.json({
+          phase,
+          avgScore: Math.round(avgScore),
+          thresholds: pointOfNoReturn
+        });
       }
 
       default:

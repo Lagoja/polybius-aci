@@ -123,6 +123,41 @@ interface LakatosPrediction {
   novelty: 'novel' | 'known' | 'retrodiction';
 }
 
+type CrisisType =
+  | 'economic'
+  | 'legitimacy'
+  | 'succession'
+  | 'external'
+  | 'mobilization'
+  | 'repression_backfire'
+  | 'defection_cascade'
+  | 'institutional'
+  | 'security'
+  | 'media';
+
+interface Crisis {
+  id: string;
+  type: CrisisType;
+  description: string;
+  date: string;
+  severity: number;
+  resolved: boolean;
+  outcome?: 'accelerated_consolidation' | 'decelerated_consolidation' | 'reversed_trajectory' | 'no_effect' | 'pending';
+}
+
+const CRISIS_TYPES: { value: CrisisType; label: string; description: string }[] = [
+  { value: 'economic', label: 'Economic Crisis', description: 'Recession, inflation, financial panic, unemployment spike' },
+  { value: 'legitimacy', label: 'Legitimacy Crisis', description: 'Scandal, corruption revelation, policy failure exposed' },
+  { value: 'succession', label: 'Succession Crisis', description: 'Leader incapacity, intra-elite power struggle' },
+  { value: 'external', label: 'External Shock', description: 'War, sanctions, foreign intervention' },
+  { value: 'mobilization', label: 'Mass Mobilization', description: 'Protests cross critical threshold' },
+  { value: 'repression_backfire', label: 'Repression Backfire', description: 'Crackdown delegitimizes rather than intimidates' },
+  { value: 'defection_cascade', label: 'Defection Cascade', description: 'Elite defections reach tipping point' },
+  { value: 'institutional', label: 'Institutional Crisis', description: 'Constitutional crisis, court confrontation, election dispute' },
+  { value: 'security', label: 'Security Crisis', description: 'Terrorism, political violence, assassination' },
+  { value: 'media', label: 'Media Exposé', description: 'Major leak, whistleblower, investigative report' },
+];
+
 interface DefectionArticle {
   title: string;
   description: string;
@@ -314,6 +349,14 @@ export default function PolybiusCalculator() {
   const [showLakatos, setShowLakatos] = useState(false);
   const [lakatosPredictions, setLakatosPredictions] = useState<Record<string, LakatosPrediction[]> | null>(null);
   const [expandedProgramme, setExpandedProgramme] = useState<string | null>(null);
+  const [crises, setCrises] = useState<Crisis[]>([]);
+  const [showCrisisLogger, setShowCrisisLogger] = useState(false);
+  const [newCrisis, setNewCrisis] = useState<{ type: CrisisType; description: string; severity: number }>({
+    type: 'economic',
+    description: '',
+    severity: 50
+  });
+  const [crisisPredictions, setCrisisPredictions] = useState<Record<string, LakatosPrediction[]> | null>(null);
   const [activeModels, setActiveModels] = useState({
     linz: false,
     levitsky: false,
@@ -2778,6 +2821,171 @@ On markets: Markets represent one of the "rackets"—industrial/financial capita
                     Click "Generate Predictions" to create testable hypotheses from each theoretical model
                   </div>
                 )}
+
+                {/* Crisis Logger */}
+                <div className="mt-6 pt-6 border-t border-indigo-200">
+                  <div className="flex justify-between items-center mb-4">
+                    <div>
+                      <h4 className="font-semibold text-slate-800">Crisis / Inflection Point Tracker</h4>
+                      <p className="text-xs text-slate-500">Log crises to generate model-specific predictions about outcomes</p>
+                    </div>
+                    <button
+                      onClick={() => setShowCrisisLogger(!showCrisisLogger)}
+                      className="px-3 py-1.5 bg-amber-600 text-white rounded-lg text-sm font-medium hover:bg-amber-700 transition-colors"
+                    >
+                      {showCrisisLogger ? 'Hide' : 'Log Crisis'}
+                    </button>
+                  </div>
+
+                  {showCrisisLogger && (
+                    <div className="bg-white/80 rounded-lg border border-amber-200 p-4 mb-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-slate-700 mb-1">Crisis Type</label>
+                          <select
+                            value={newCrisis.type}
+                            onChange={(e) => setNewCrisis({ ...newCrisis, type: e.target.value as CrisisType })}
+                            className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
+                          >
+                            {CRISIS_TYPES.map(ct => (
+                              <option key={ct.value} value={ct.value}>{ct.label}</option>
+                            ))}
+                          </select>
+                          <p className="text-xs text-slate-500 mt-1">
+                            {CRISIS_TYPES.find(ct => ct.value === newCrisis.type)?.description}
+                          </p>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-slate-700 mb-1">Severity (0-100)</label>
+                          <input
+                            type="range"
+                            min="0"
+                            max="100"
+                            value={newCrisis.severity}
+                            onChange={(e) => setNewCrisis({ ...newCrisis, severity: parseInt(e.target.value) })}
+                            className="w-full"
+                          />
+                          <div className="flex justify-between text-xs text-slate-500">
+                            <span>Minor</span>
+                            <span className="font-medium">{newCrisis.severity}</span>
+                            <span>Severe</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="mt-4">
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Description</label>
+                        <textarea
+                          value={newCrisis.description}
+                          onChange={(e) => setNewCrisis({ ...newCrisis, description: e.target.value })}
+                          placeholder="Brief description of the crisis event..."
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
+                          rows={2}
+                        />
+                      </div>
+                      <button
+                        onClick={async () => {
+                          if (!newCrisis.description.trim()) return;
+
+                          const crisis: Crisis = {
+                            id: `crisis-${Date.now()}`,
+                            type: newCrisis.type,
+                            description: newCrisis.description,
+                            date: new Date().toISOString().split('T')[0],
+                            severity: newCrisis.severity,
+                            resolved: false,
+                            outcome: 'pending'
+                          };
+                          setCrises([crisis, ...crises]);
+
+                          // Generate crisis predictions
+                          try {
+                            const response = await fetch('/api/lakatos', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({
+                                action: 'generateCrisisPredictions',
+                                crisisType: crisis.type,
+                                scores
+                              })
+                            });
+                            const data = await response.json();
+                            setCrisisPredictions(data.predictions);
+                          } catch (err) {
+                            console.error('Failed to generate crisis predictions:', err);
+                          }
+
+                          setNewCrisis({ type: 'economic', description: '', severity: 50 });
+                        }}
+                        className="mt-3 px-4 py-2 bg-amber-600 text-white rounded-lg text-sm font-medium hover:bg-amber-700 transition-colors"
+                      >
+                        Log Crisis & Generate Predictions
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Logged Crises */}
+                  {crises.length > 0 && (
+                    <div className="space-y-3">
+                      <h5 className="text-sm font-medium text-slate-700">Logged Crises</h5>
+                      {crises.map(crisis => (
+                        <div key={crisis.id} className="bg-white rounded-lg border border-slate-200 p-3">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <span className="px-2 py-0.5 bg-amber-100 text-amber-800 text-xs font-medium rounded">
+                                {CRISIS_TYPES.find(ct => ct.value === crisis.type)?.label}
+                              </span>
+                              <span className="ml-2 text-xs text-slate-500">{crisis.date}</span>
+                              <span className="ml-2 text-xs text-slate-500">Severity: {crisis.severity}</span>
+                            </div>
+                            <select
+                              value={crisis.outcome || 'pending'}
+                              onChange={(e) => {
+                                setCrises(crises.map(c =>
+                                  c.id === crisis.id
+                                    ? { ...c, outcome: e.target.value as Crisis['outcome'], resolved: e.target.value !== 'pending' }
+                                    : c
+                                ));
+                              }}
+                              className="text-xs border border-slate-200 rounded px-2 py-1"
+                            >
+                              <option value="pending">Pending</option>
+                              <option value="accelerated_consolidation">Accelerated Consolidation</option>
+                              <option value="decelerated_consolidation">Decelerated Consolidation</option>
+                              <option value="reversed_trajectory">Reversed Trajectory</option>
+                              <option value="no_effect">No Effect</option>
+                            </select>
+                          </div>
+                          <p className="text-sm text-slate-700 mt-2">{crisis.description}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Crisis Predictions */}
+                  {crisisPredictions && Object.keys(crisisPredictions).length > 0 && (
+                    <div className="mt-4 pt-4 border-t border-slate-200">
+                      <h5 className="text-sm font-medium text-slate-700 mb-3">Model Predictions for Crisis</h5>
+                      <div className="space-y-2">
+                        {Object.entries(crisisPredictions).map(([modelId, predictions]) => {
+                          const model = theoreticalModels.find(m => m.id === modelId);
+                          if (!model || !Array.isArray(predictions) || predictions.length === 0) return null;
+
+                          return (
+                            <div key={modelId} className="bg-slate-50 rounded-lg p-3 border border-slate-200">
+                              <h6 className="font-medium text-sm text-slate-800 mb-2">{model.name}</h6>
+                              {predictions.map(pred => (
+                                <div key={pred.id} className="text-xs text-slate-600">
+                                  <p className="mb-1">{pred.hypothesis}</p>
+                                  <p className="text-slate-500"><strong>Key variable:</strong> {pred.conditions}</p>
+                                </div>
+                              ))}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>
