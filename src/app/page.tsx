@@ -2202,6 +2202,61 @@ This model weights mobilizational balance heavily—but requires honest assessme
             <div className={`font-bold text-2xl ${risk.textColor}`}>{risk.level}</div>
           </div>
 
+          {/* Export for Publishing */}
+          {hasNonZeroScores && (
+            <div className="mt-4 flex justify-center">
+              <button
+                onClick={() => {
+                  const exportData = {
+                    generatedAt: new Date().toISOString(),
+                    country,
+                    aciScore,
+                    riskLevel: risk.level,
+                    scores,
+                    summary: researchResults?.summary || '',
+                    factorResults: researchResults ? Object.fromEntries(
+                      factors.map(f => {
+                        const result = researchResults[f.id as keyof typeof researchResults];
+                        if (result && typeof result === 'object' && 'score' in result) {
+                          return [f.id, {
+                            score: (result as { score: number; evidence: string; trend: string }).score,
+                            evidence: (result as { score: number; evidence: string; trend: string }).evidence,
+                            trend: (result as { score: number; evidence: string; trend: string }).trend
+                          }];
+                        }
+                        return [f.id, { score: scores[f.id as keyof typeof scores], evidence: '', trend: 'stable' }];
+                      })
+                    ) : {},
+                    historicalComparison: comparativeData ? {
+                      averageScore: comparativeData.consensus.averageScore,
+                      mostSimilarCases: comparativeData.mostCitedCases.slice(0, 3).map(c => ({
+                        country: c.country,
+                        period: c.period,
+                        outcome: c.outcome
+                      })),
+                      interpretation: comparativeData.interpretation
+                    } : null
+                  };
+                  const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = 'results.json';
+                  document.body.appendChild(a);
+                  a.click();
+                  document.body.removeChild(a);
+                  URL.revokeObjectURL(url);
+                }}
+                className="px-4 py-2 bg-slate-700 text-white rounded-lg text-sm font-medium hover:bg-slate-800 transition-colors flex items-center gap-2"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                Export for Publishing
+              </button>
+            </div>
+          )}
+
           {/* Vital Signs Dashboard */}
           {hasNonZeroScores && (
             <div className="mt-8 bg-slate-900 rounded-xl p-6 border border-slate-700">

@@ -35,19 +35,21 @@ const DEFAULT_RESULTS: StoredResults = {
 export default function ResultsPage() {
   const [results, setResults] = useState<StoredResults>(DEFAULT_RESULTS);
   const [mounted, setMounted] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     setMounted(true);
-    // In production, this would fetch from a JSON file or API endpoint
-    // For now, we'll check localStorage for any stored results
-    const stored = localStorage.getItem('polybius-public-results');
-    if (stored) {
-      try {
-        setResults(JSON.parse(stored));
-      } catch (e) {
-        console.error('Failed to parse stored results');
-      }
-    }
+    // Fetch from the static JSON file
+    fetch('/results.json')
+      .then(res => res.json())
+      .then(data => {
+        setResults(data);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error('Failed to fetch results:', err);
+        setLoading(false);
+      });
   }, []);
 
   const getRiskColor = (score: number) => {
@@ -66,10 +68,10 @@ export default function ResultsPage() {
 
   const colors = getRiskColor(results.aciScore);
 
-  if (!mounted) {
+  if (!mounted || loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">
-        <div className="animate-pulse text-slate-600">Loading...</div>
+        <div className="animate-pulse text-slate-600">Loading results...</div>
       </div>
     );
   }
