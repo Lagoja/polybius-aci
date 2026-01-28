@@ -1,0 +1,21 @@
+{
+  "generatedAt": "2025-01-28T12:00:00.000Z",
+  "country": "United States",
+  "aciScore": 0,
+  "riskLevel": "Awaiting Analysis",
+  "scores": {
+    "judicial": 0,
+    "federalism": 0,
+    "political": 0,
+    "media": 0,
+    "civil": 0,
+    "publicOpinion": 0,
+    "mobilizationalBalance": 0,
+    "stateCapacity": 0,
+    "corporateCompliance": 0,
+    "electionInterference": 0
+  },
+  "summary": "Run a live analysis at app.polybius.world to generate results.",
+  "factorResults": {},
+  "historicalComparison": null
+}
