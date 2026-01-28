@@ -1,0 +1,24 @@
+{
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "has": [
+        {
+          "type": "host",
+          "value": "polybius.world"
+        }
+      ],
+      "destination": "/results"
+    },
+    {
+      "source": "/(.*)",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.polybius.world"
+        }
+      ],
+      "destination": "/results"
+    }
+  ]
+}

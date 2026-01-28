@@ -108,55 +108,6 @@ interface OpEdData {
   interpretation: string[];
 }
 
-interface LakatosPrediction {
-  id: string;
-  modelId: string;
-  hypothesis: string;
-  timeframe: string;
-  generatedDate: string;
-  targetDate: string;
-  conditions: string;
-  refutationConditions: string;
-  status: 'pending' | 'confirmed' | 'refuted' | 'ambiguous';
-  outcome?: string;
-  outcomeDate?: string;
-  novelty: 'novel' | 'known' | 'retrodiction';
-}
-
-type CrisisType =
-  | 'economic'
-  | 'legitimacy'
-  | 'succession'
-  | 'external'
-  | 'mobilization'
-  | 'repression_backfire'
-  | 'defection_cascade'
-  | 'institutional'
-  | 'security'
-  | 'media';
-
-interface Crisis {
-  id: string;
-  type: CrisisType;
-  description: string;
-  date: string;
-  severity: number;
-  resolved: boolean;
-  outcome?: 'accelerated_consolidation' | 'decelerated_consolidation' | 'reversed_trajectory' | 'no_effect' | 'pending';
-}
-
-const CRISIS_TYPES: { value: CrisisType; label: string; description: string }[] = [
-  { value: 'economic', label: 'Economic Crisis', description: 'Recession, inflation, financial panic, unemployment spike' },
-  { value: 'legitimacy', label: 'Legitimacy Crisis', description: 'Scandal, corruption revelation, policy failure exposed' },
-  { value: 'succession', label: 'Succession Crisis', description: 'Leader incapacity, intra-elite power struggle' },
-  { value: 'external', label: 'External Shock', description: 'War, sanctions, foreign intervention' },
-  { value: 'mobilization', label: 'Mass Mobilization', description: 'Protests cross critical threshold' },
-  { value: 'repression_backfire', label: 'Repression Backfire', description: 'Crackdown delegitimizes rather than intimidates' },
-  { value: 'defection_cascade', label: 'Defection Cascade', description: 'Elite defections reach tipping point' },
-  { value: 'institutional', label: 'Institutional Crisis', description: 'Constitutional crisis, court confrontation, election dispute' },
-  { value: 'security', label: 'Security Crisis', description: 'Terrorism, political violence, assassination' },
-  { value: 'media', label: 'Media Exposé', description: 'Major leak, whistleblower, investigative report' },
-];
 
 interface DefectionArticle {
   title: string;
@@ -346,17 +297,6 @@ export default function PolybiusCalculator() {
   const [comparativeData, setComparativeData] = useState<ComparativeAnalysisData | null>(null);
   const [isFetchingComparative, setIsFetchingComparative] = useState(false);
   const [socialError, setSocialError] = useState('');
-  const [showLakatos, setShowLakatos] = useState(false);
-  const [lakatosPredictions, setLakatosPredictions] = useState<Record<string, LakatosPrediction[]> | null>(null);
-  const [expandedProgramme, setExpandedProgramme] = useState<string | null>(null);
-  const [crises, setCrises] = useState<Crisis[]>([]);
-  const [showCrisisLogger, setShowCrisisLogger] = useState(false);
-  const [newCrisis, setNewCrisis] = useState<{ type: CrisisType; description: string; severity: number }>({
-    type: 'economic',
-    description: '',
-    severity: 50
-  });
-  const [crisisPredictions, setCrisisPredictions] = useState<Record<string, LakatosPrediction[]> | null>(null);
   const [activeModels, setActiveModels] = useState({
     linz: false,
     levitsky: false,
@@ -368,8 +308,7 @@ export default function PolybiusCalculator() {
     gameTheory: false,
     classical: false,
     paxton: false,
-    bermanRiley: false,
-    frankfurtSchool: false
+    bermanRiley: false
   });
 
   useEffect(() => {
@@ -630,30 +569,6 @@ Opposition infrastructure: union locals (especially teachers, SEIU, AFSCME), Bla
 This model weights mobilizational balance heavily—but requires honest assessment of BOTH sides' actual activation, not media-driven assumptions about one side's overwhelming strength.`,
       keyWorks: 'Civil Society and the Collapse of the Weimar Republic (Berman, 1997), The Civic Foundations of Fascism in Europe (Riley, 2010), The Tea Party and the Remaking of Republican Conservatism (Skocpol & Williamson, 2012)'
     },
-    {
-      id: 'frankfurtSchool',
-      name: 'Frankfurt School',
-      author: 'Adorno, Neumann, Fromm, Horkheimer, Lowenthal',
-      cluster: 'cultural-social',
-      weights: { judicial: 0.05, federalism: 0.05, political: 0.10, media: 0.25, civil: 0.05, publicOpinion: 0.30, mobilizationalBalance: 0.05, stateCapacity: 0.05, corporateCompliance: 0.10, electionInterference: 0.00 },
-      shortDesc: 'Authoritarian personality, rackets, and culture industry',
-      fullDesc: `The Frankfurt School's analysis of fascism combined psychoanalysis, sociology, and critical theory to understand both the psychological susceptibility to authoritarianism and the structure of fascist rule:
-
-• Racket Theory (Neumann, "Behemoth"): Nazi Germany was NOT a unified totalitarian state but a chaotic competition between power blocs—party, army, bureaucracy, industry—each pursuing its own interests. These "rackets" were held together only by shared interest in plunder and terror, not ideology. Look for: competing power centers, institutional chaos masked by propaganda, regime as alliance of predatory interests.
-
-• Authoritarian Personality (Adorno, Frenkel-Brunswik, Levinson, Sanford): Psychological susceptibility to authoritarianism measured through the F-scale: conventionalism, authoritarian submission, authoritarian aggression, superstition/stereotypy, power/toughness worship, destructiveness/cynicism, projectivity. The question: what is the psychological substrate? Is the population primed for authoritarianism?
-
-• Studies in Prejudice Series: "The Authoritarian Personality," "Dynamics of Prejudice," "Prophets of Deceit," "Anti-Semitism and Emotional Disorder," "Rehearsal for Destruction." Examined American conditions for potential fascism—the cultural, psychological, and social factors that could make "it" happen here.
-
-• Culture Industry (Adorno/Horkheimer): Mass media produces conformist, passive subjects susceptible to authoritarian appeals. Entertainment as pacification, pseudo-individualism, integration of dissent.
-
-• Escape from Freedom (Fromm): Modern freedom creates anxiety; people may flee to authoritarian submission to escape the burden of individual responsibility.
-
-Key insight: The Frankfurt School looks at BOTH the psychological/cultural preconditions in the population AND the chaotic, racket-based structure of the regime. High authoritarian personality scores + competing power rackets + culture industry producing conformity = conditions for fascism.
-
-On markets: Markets represent one of the "rackets"—industrial/financial capital pursuing its interests. Market volatility could signal conflict BETWEEN rackets rather than unified regime action. The Frankfurt School would be skeptical of markets as constraint—capital was complicit in Nazism and may be complicit again if its interests are served.`,
-      keyWorks: 'Behemoth: Structure and Practice of National Socialism (Neumann, 1942), The Authoritarian Personality (Adorno et al., 1950), Dialectic of Enlightenment (Adorno & Horkheimer, 1944), Escape from Freedom (Fromm, 1941), Prophets of Deceit (Lowenthal & Guterman, 1949)'
-    }
   ];
 
   const factors = [
@@ -1139,9 +1054,6 @@ On markets: Markets represent one of the "rackets"—industrial/financial capita
       'paxton': (score, s) => score >= 50
         ? `Fascist mobilization pattern: regime grassroots (${s.mobilizationalBalance}) gaining advantage. Opposition organizational infrastructure under threat.`
         : `Opposition civil society still mobilized; regime lacks overwhelming mobilizational advantage.`,
-      'frankfurtSchool': (score, s) => score >= 50
-        ? `Culture industry capture advancing: media (${s.media}) and mass psychology (${s.publicOpinion}) show authoritarian discourse normalizing.`
-        : `Authoritarian culture industry not yet dominant; spaces for critical discourse remain.`,
       'bermanRiley': (score, s) => score >= 50
         ? `Mobilizational imbalance critical: regime forces (${s.mobilizationalBalance}) outpacing opposition organization. Historical pattern suggests consolidation risk.`
         : `Opposition organizational capacity intact; mobilizational balance (${s.mobilizationalBalance}) not yet decisively favoring regime.`,
@@ -2440,6 +2352,34 @@ On markets: Markets represent one of the "rackets"—industrial/financial capita
                 <h4 className="font-bold text-slate-800 text-lg">Historical Comparison</h4>
               </div>
 
+              {/* Methodology Explanation */}
+              <details className="mb-4 bg-white/60 rounded-lg border border-amber-100">
+                <summary className="p-3 text-sm font-medium text-slate-700 cursor-pointer hover:text-slate-900">
+                  How does this comparison work?
+                </summary>
+                <div className="px-3 pb-3 text-sm text-slate-600 space-y-2">
+                  <p>
+                    <strong>Data Sources:</strong> Historical factor scores are derived from the <a href="https://v-dem.net/" className="text-blue-600 underline" target="_blank" rel="noopener noreferrer">Varieties of Democracy (V-Dem)</a> dataset,
+                    the <a href="https://www.systemicpeace.org/polityproject.html" className="text-blue-600 underline" target="_blank" rel="noopener noreferrer">Polity Project</a>, and country-specific historiography.
+                  </p>
+                  <p>
+                    <strong>Cases Included:</strong> 25+ documented regime transitions including Weimar Germany (1930-33), Fascist Italy (1921-25),
+                    Chile (1970-73), Hungary (2010-present), Turkey (2013-present), Venezuela (1999-present), plus successful resistance cases
+                    like France (1934-36), Finland (1930s), and recent democratic resilience in Brazil, Poland, and South Korea.
+                  </p>
+                  <p>
+                    <strong>Method:</strong> Each theoretical model identifies which historical cases most closely match current conditions based on its
+                    weighted factors. A Marxian analysis emphasizes corporate compliance patterns; Levitsky-Ziblatt focuses on judicial capture sequences;
+                    Berman-Riley tracks mobilizational balance. Convergent predictions across models increase confidence.
+                  </p>
+                  <p>
+                    <strong>Key Literature:</strong> Paxton's <em>Anatomy of Fascism</em>, Berman's <em>Civil Society and the Collapse of the Weimar Republic</em>,
+                    Riley's <em>The Civic Foundations of Fascism in Europe</em>, Levitsky & Ziblatt's <em>How Democracies Die</em>,
+                    Linz's <em>Breakdown of Democratic Regimes</em>.
+                  </p>
+                </div>
+              </details>
+
               {/* Consensus Box */}
               <div className={`p-4 rounded-lg mb-4 ${
                 comparativeData.consensus.averageScore >= 60 ? 'bg-red-100 border border-red-300' :
@@ -2700,294 +2640,6 @@ On markets: Markets represent one of the "rackets"—industrial/financial capita
                 </p>
               )}
             </div>
-          </div>
-        )}
-
-        {/* Lakatosian Research Programme */}
-        {hasNonZeroScores && (
-          <div className="mb-10 bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl p-6 border border-indigo-200">
-            <div className="flex justify-between items-start mb-4">
-              <div>
-                <h3 className="text-xl font-bold text-slate-800 mb-1">Research Programme Analysis</h3>
-                <p className="text-slate-600 text-sm">Lakatosian evaluation: which theoretical frameworks are generating successful predictions?</p>
-              </div>
-              <button
-                onClick={async () => {
-                  if (!lakatosPredictions) {
-                    try {
-                      const response = await fetch('/api/lakatos', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ action: 'generateAllPredictions', scores, countryContext: country })
-                      });
-                      const data = await response.json();
-                      setLakatosPredictions(data.predictions);
-                    } catch (err) {
-                      console.error('Failed to generate predictions:', err);
-                    }
-                  }
-                  setShowLakatos(!showLakatos);
-                }}
-                className="px-4 py-2 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors text-sm"
-              >
-                {showLakatos ? 'Hide' : 'Generate'} Predictions
-              </button>
-            </div>
-
-            {showLakatos && (
-              <div className="space-y-4">
-                <div className="p-4 bg-white/70 rounded-lg border border-indigo-100">
-                  <p className="text-sm text-slate-700 mb-3">
-                    <strong>Lakatos's Method:</strong> A research programme is <span className="text-green-700 font-semibold">progressive</span> if it
-                    predicts novel facts that are later confirmed. It is <span className="text-red-700 font-semibold">degenerating</span> if it only
-                    explains facts after the fact or requires ad-hoc modifications to avoid refutation.
-                  </p>
-                  <p className="text-xs text-slate-500">
-                    Each theoretical model below has generated testable predictions based on current factor scores. Track outcomes over time to evaluate which frameworks best explain democratic backsliding.
-                  </p>
-                </div>
-
-                {lakatosPredictions && Object.entries(lakatosPredictions).map(([modelId, predictions]) => {
-                  const model = theoreticalModels.find(m => m.id === modelId);
-                  if (!model || !Array.isArray(predictions) || predictions.length === 0) return null;
-
-                  return (
-                    <div key={modelId} className="bg-white rounded-lg border border-slate-200 overflow-hidden">
-                      <div
-                        className="p-4 cursor-pointer hover:bg-slate-50 transition-colors"
-                        onClick={() => setExpandedProgramme(expandedProgramme === modelId ? null : modelId)}
-                      >
-                        <div className="flex justify-between items-center">
-                          <div>
-                            <h4 className="font-semibold text-slate-800">{model.name}</h4>
-                            <p className="text-xs text-slate-500">{predictions.length} testable predictions generated</p>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="px-2 py-1 bg-slate-100 text-slate-600 text-xs rounded">
-                              {predictions.filter(p => p.status === 'pending').length} pending
-                            </span>
-                            <ChevronDown className={`w-5 h-5 text-slate-400 transition-transform ${expandedProgramme === modelId ? 'rotate-180' : ''}`} />
-                          </div>
-                        </div>
-                      </div>
-
-                      {expandedProgramme === modelId && (
-                        <div className="border-t border-slate-200 p-4 bg-slate-50">
-                          <div className="space-y-3">
-                            {predictions.map(pred => (
-                              <div key={pred.id} className="p-3 bg-white rounded border border-slate-200">
-                                <p className="text-sm text-slate-800 font-medium mb-2">{pred.hypothesis}</p>
-                                <div className="grid grid-cols-2 gap-2 text-xs">
-                                  <div>
-                                    <span className="text-slate-500">Timeframe:</span>{' '}
-                                    <span className="text-slate-700">{pred.timeframe}</span>
-                                  </div>
-                                  <div>
-                                    <span className="text-slate-500">Type:</span>{' '}
-                                    <span className={`font-medium ${pred.novelty === 'novel' ? 'text-indigo-600' : 'text-slate-600'}`}>
-                                      {pred.novelty === 'novel' ? 'Novel prediction' : 'Retrodiction'}
-                                    </span>
-                                  </div>
-                                </div>
-                                <div className="mt-2 text-xs">
-                                  <div className="text-green-700">
-                                    <strong>Confirms if:</strong> {pred.conditions}
-                                  </div>
-                                  <div className="text-red-700 mt-1">
-                                    <strong>Refutes if:</strong> {pred.refutationConditions}
-                                  </div>
-                                </div>
-                                <div className="mt-2 flex gap-2">
-                                  <span className={`px-2 py-0.5 rounded text-xs font-medium ${
-                                    pred.status === 'pending' ? 'bg-amber-100 text-amber-700' :
-                                    pred.status === 'confirmed' ? 'bg-green-100 text-green-700' :
-                                    pred.status === 'refuted' ? 'bg-red-100 text-red-700' :
-                                    'bg-slate-100 text-slate-600'
-                                  }`}>
-                                    {pred.status.toUpperCase()}
-                                  </span>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-
-                {!lakatosPredictions && (
-                  <div className="text-center py-8 text-slate-500">
-                    Click "Generate Predictions" to create testable hypotheses from each theoretical model
-                  </div>
-                )}
-
-                {/* Crisis Logger */}
-                <div className="mt-6 pt-6 border-t border-indigo-200">
-                  <div className="flex justify-between items-center mb-4">
-                    <div>
-                      <h4 className="font-semibold text-slate-800">Crisis / Inflection Point Tracker</h4>
-                      <p className="text-xs text-slate-500">Log crises to generate model-specific predictions about outcomes</p>
-                    </div>
-                    <button
-                      onClick={() => setShowCrisisLogger(!showCrisisLogger)}
-                      className="px-3 py-1.5 bg-amber-600 text-white rounded-lg text-sm font-medium hover:bg-amber-700 transition-colors"
-                    >
-                      {showCrisisLogger ? 'Hide' : 'Log Crisis'}
-                    </button>
-                  </div>
-
-                  {showCrisisLogger && (
-                    <div className="bg-white/80 rounded-lg border border-amber-200 p-4 mb-4">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-slate-700 mb-1">Crisis Type</label>
-                          <select
-                            value={newCrisis.type}
-                            onChange={(e) => setNewCrisis({ ...newCrisis, type: e.target.value as CrisisType })}
-                            className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
-                          >
-                            {CRISIS_TYPES.map(ct => (
-                              <option key={ct.value} value={ct.value}>{ct.label}</option>
-                            ))}
-                          </select>
-                          <p className="text-xs text-slate-500 mt-1">
-                            {CRISIS_TYPES.find(ct => ct.value === newCrisis.type)?.description}
-                          </p>
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-slate-700 mb-1">Severity (0-100)</label>
-                          <input
-                            type="range"
-                            min="0"
-                            max="100"
-                            value={newCrisis.severity}
-                            onChange={(e) => setNewCrisis({ ...newCrisis, severity: parseInt(e.target.value) })}
-                            className="w-full"
-                          />
-                          <div className="flex justify-between text-xs text-slate-500">
-                            <span>Minor</span>
-                            <span className="font-medium">{newCrisis.severity}</span>
-                            <span>Severe</span>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="mt-4">
-                        <label className="block text-sm font-medium text-slate-700 mb-1">Description</label>
-                        <textarea
-                          value={newCrisis.description}
-                          onChange={(e) => setNewCrisis({ ...newCrisis, description: e.target.value })}
-                          placeholder="Brief description of the crisis event..."
-                          className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
-                          rows={2}
-                        />
-                      </div>
-                      <button
-                        onClick={async () => {
-                          if (!newCrisis.description.trim()) return;
-
-                          const crisis: Crisis = {
-                            id: `crisis-${Date.now()}`,
-                            type: newCrisis.type,
-                            description: newCrisis.description,
-                            date: new Date().toISOString().split('T')[0],
-                            severity: newCrisis.severity,
-                            resolved: false,
-                            outcome: 'pending'
-                          };
-                          setCrises([crisis, ...crises]);
-
-                          // Generate crisis predictions
-                          try {
-                            const response = await fetch('/api/lakatos', {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({
-                                action: 'generateCrisisPredictions',
-                                crisisType: crisis.type,
-                                scores
-                              })
-                            });
-                            const data = await response.json();
-                            setCrisisPredictions(data.predictions);
-                          } catch (err) {
-                            console.error('Failed to generate crisis predictions:', err);
-                          }
-
-                          setNewCrisis({ type: 'economic', description: '', severity: 50 });
-                        }}
-                        className="mt-3 px-4 py-2 bg-amber-600 text-white rounded-lg text-sm font-medium hover:bg-amber-700 transition-colors"
-                      >
-                        Log Crisis & Generate Predictions
-                      </button>
-                    </div>
-                  )}
-
-                  {/* Logged Crises */}
-                  {crises.length > 0 && (
-                    <div className="space-y-3">
-                      <h5 className="text-sm font-medium text-slate-700">Logged Crises</h5>
-                      {crises.map(crisis => (
-                        <div key={crisis.id} className="bg-white rounded-lg border border-slate-200 p-3">
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <span className="px-2 py-0.5 bg-amber-100 text-amber-800 text-xs font-medium rounded">
-                                {CRISIS_TYPES.find(ct => ct.value === crisis.type)?.label}
-                              </span>
-                              <span className="ml-2 text-xs text-slate-500">{crisis.date}</span>
-                              <span className="ml-2 text-xs text-slate-500">Severity: {crisis.severity}</span>
-                            </div>
-                            <select
-                              value={crisis.outcome || 'pending'}
-                              onChange={(e) => {
-                                setCrises(crises.map(c =>
-                                  c.id === crisis.id
-                                    ? { ...c, outcome: e.target.value as Crisis['outcome'], resolved: e.target.value !== 'pending' }
-                                    : c
-                                ));
-                              }}
-                              className="text-xs border border-slate-200 rounded px-2 py-1"
-                            >
-                              <option value="pending">Pending</option>
-                              <option value="accelerated_consolidation">Accelerated Consolidation</option>
-                              <option value="decelerated_consolidation">Decelerated Consolidation</option>
-                              <option value="reversed_trajectory">Reversed Trajectory</option>
-                              <option value="no_effect">No Effect</option>
-                            </select>
-                          </div>
-                          <p className="text-sm text-slate-700 mt-2">{crisis.description}</p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Crisis Predictions */}
-                  {crisisPredictions && Object.keys(crisisPredictions).length > 0 && (
-                    <div className="mt-4 pt-4 border-t border-slate-200">
-                      <h5 className="text-sm font-medium text-slate-700 mb-3">Model Predictions for Crisis</h5>
-                      <div className="space-y-2">
-                        {Object.entries(crisisPredictions).map(([modelId, predictions]) => {
-                          const model = theoreticalModels.find(m => m.id === modelId);
-                          if (!model || !Array.isArray(predictions) || predictions.length === 0) return null;
-
-                          return (
-                            <div key={modelId} className="bg-slate-50 rounded-lg p-3 border border-slate-200">
-                              <h6 className="font-medium text-sm text-slate-800 mb-2">{model.name}</h6>
-                              {predictions.map(pred => (
-                                <div key={pred.id} className="text-xs text-slate-600">
-                                  <p className="mb-1">{pred.hypothesis}</p>
-                                  <p className="text-slate-500"><strong>Key variable:</strong> {pred.conditions}</p>
-                                </div>
-                              ))}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
           </div>
         )}
 
