@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { AlertCircle, Loader2, Check, Settings, X, TrendingUp, TrendingDown, Minus, ChevronDown, ChevronUp, Info, Activity, Heart, Newspaper, Search, ExternalLink, BookOpen, Users, Shield, Radio, Upload } from 'lucide-react';
+import { AlertCircle, Loader2, Check, Settings, X, TrendingUp, TrendingDown, Minus, ChevronDown, ChevronUp, Info, Activity, Heart, Search, ExternalLink, BookOpen, Users, Shield, Radio, Upload } from 'lucide-react';
 
 interface FactorResult {
   score: number;
@@ -40,28 +40,6 @@ interface TrendsData {
   overallTemperature: number;
   interpretation: string[];
   errors?: string[];
-}
-
-interface HeadlineArticle {
-  title: string;
-  description: string;
-  source: { name: string };
-  url: string;
-  publishedAt: string;
-  sentiment: 'negative' | 'neutral' | 'positive';
-  category: string;
-  stressIndicators: string[];
-}
-
-interface HeadlinesData {
-  country: string;
-  totalArticles: number;
-  articles: HeadlineArticle[];
-  categoryBreakdown: Record<string, number>;
-  sentimentBreakdown: Record<string, number>;
-  topIndicators: { indicator: string; count: number }[];
-  stressScore: number;
-  interpretation: string[];
 }
 
 interface OpEdArticle {
@@ -283,9 +261,7 @@ export default function PolybiusCalculator() {
   const [searchMode, setSearchMode] = useState<'live' | 'quick'>('quick');
   const [newsApiKey, setNewsApiKey] = useState('');
   const [trendsData, setTrendsData] = useState<TrendsData | null>(null);
-  const [headlinesData, setHeadlinesData] = useState<HeadlinesData | null>(null);
   const [isFetchingTrends, setIsFetchingTrends] = useState(false);
-  const [isFetchingHeadlines, setIsFetchingHeadlines] = useState(false);
   const [isFetchingOpEds, setIsFetchingOpEds] = useState(false);
   const [opEdData, setOpEdData] = useState<OpEdData | null>(null);
   const [isFetchingEliteSignals, setIsFetchingEliteSignals] = useState(false);
@@ -733,43 +709,6 @@ This model weights mobilizational balance heavily—but requires honest assessme
     }
   };
 
-  const fetchHeadlines = async () => {
-    if (!country.trim()) {
-      setSocialError('Please enter a country name first');
-      return;
-    }
-
-    if (!apiKey) {
-      setShowSettings(true);
-      setSocialError('Please enter your Anthropic API key in settings');
-      return;
-    }
-
-    setIsFetchingHeadlines(true);
-    setSocialError('');
-
-    try {
-      console.log('Sending headlines request:', { country, hasApiKey: !!apiKey, apiKeyLength: apiKey?.length });
-      const response = await fetch('/api/headlines', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ country, apiKey })
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || `Request failed: ${response.status}`);
-      }
-
-      const data = await response.json();
-      setHeadlinesData(data);
-    } catch (err) {
-      setSocialError(err instanceof Error ? err.message : 'Failed to fetch headlines');
-    } finally {
-      setIsFetchingHeadlines(false);
-    }
-  };
-
   const fetchOpEds = async () => {
     if (!country.trim()) {
       setSocialError('Please enter a country name first');
@@ -927,24 +866,6 @@ This model weights mobilizational balance heavily—but requires honest assessme
       }
     }
 
-    // From Headlines
-    if (headlinesData) {
-      // High stress score from headlines
-      if (headlinesData.stressScore > 60) {
-        // Distribute stress across relevant factors based on category breakdown
-        const cats = headlinesData.categoryBreakdown;
-        if ((cats.protests || 0) > 3) {
-          adjustments.civil = Math.min(100, (adjustments.civil || scores.civil || 0) + 10);
-        }
-        if ((cats.judiciary || 0) > 3) {
-          adjustments.judicial = Math.min(100, (adjustments.judicial || scores.judicial || 0) + 10);
-        }
-        if ((cats.media || 0) > 2) {
-          adjustments.media = Math.min(100, (adjustments.media || scores.media || 0) + 10);
-        }
-      }
-    }
-
     // From Op-Ed Hegemonic Analysis
     if (opEdData) {
       const signals = opEdData.derivedSignals;
@@ -1025,7 +946,7 @@ This model weights mobilizational balance heavily—but requires honest assessme
     return adjustments;
   };
 
-  const hasSocialSignals = trendsData || headlinesData || opEdData || eliteSignalsData || blueskyData || marketSignalsData;
+  const hasSocialSignals = trendsData || opEdData || eliteSignalsData || blueskyData || marketSignalsData;
 
   const aciScore = calculateACI();
   const risk = getRiskLevel(aciScore);
@@ -1355,7 +1276,7 @@ This model weights mobilizational balance heavily—but requires honest assessme
           <div className="flex items-center gap-2 mb-4">
             <Activity className="w-5 h-5 text-purple-600" />
             <h3 className="text-xl font-bold text-slate-800">Social Signals</h3>
-            <span className="text-sm text-slate-500">(Trends + Headlines + Hegemonic Analysis)</span>
+            <span className="text-sm text-slate-500">(Trends + Hegemonic Analysis + Elite Signals)</span>
           </div>
 
           <div className="flex flex-wrap gap-3 mb-4">
@@ -1368,17 +1289,6 @@ This model weights mobilizational balance heavily—but requires honest assessme
                 <><Loader2 className="w-4 h-4 animate-spin" /> Fetching Trends...</>
               ) : (
                 <><Search className="w-4 h-4" /> Google Trends</>
-              )}
-            </button>
-            <button
-              onClick={fetchHeadlines}
-              disabled={isFetchingHeadlines || !country.trim()}
-              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 disabled:bg-slate-400 disabled:cursor-not-allowed transition-colors"
-            >
-              {isFetchingHeadlines ? (
-                <><Loader2 className="w-4 h-4 animate-spin" /> Fetching Headlines...</>
-              ) : (
-                <><Newspaper className="w-4 h-4" /> News Headlines</>
               )}
             </button>
             <button
@@ -1492,102 +1402,6 @@ This model weights mobilizational balance heavily—but requires honest assessme
                   {trendsData.errors.length} search terms failed to load (rate limited or no data)
                 </div>
               )}
-            </div>
-          )}
-
-          {/* Headlines Results */}
-          {headlinesData && (
-            <div className="bg-white rounded-lg p-4 border border-indigo-200">
-              <div className="flex items-center justify-between mb-3">
-                <h4 className="font-bold text-slate-800 flex items-center gap-2">
-                  <Newspaper className="w-4 h-4 text-indigo-600" />
-                  Headlines: {headlinesData.country}
-                </h4>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-slate-500">Stress Score:</span>
-                  <span className={`px-2 py-1 rounded font-bold text-sm ${
-                    headlinesData.stressScore < 30 ? 'bg-green-100 text-green-700' :
-                    headlinesData.stressScore < 60 ? 'bg-yellow-100 text-yellow-700' :
-                    'bg-red-100 text-red-700'
-                  }`}>
-                    {headlinesData.stressScore}/100
-                  </span>
-                </div>
-              </div>
-
-              {/* Sentiment breakdown */}
-              <div className="flex gap-4 mb-4">
-                <div className="flex items-center gap-1">
-                  <span className="w-3 h-3 rounded-full bg-red-500"></span>
-                  <span className="text-sm text-slate-600">Negative: {headlinesData.sentimentBreakdown.negative || 0}</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <span className="w-3 h-3 rounded-full bg-gray-400"></span>
-                  <span className="text-sm text-slate-600">Neutral: {headlinesData.sentimentBreakdown.neutral || 0}</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <span className="w-3 h-3 rounded-full bg-green-500"></span>
-                  <span className="text-sm text-slate-600">Positive: {headlinesData.sentimentBreakdown.positive || 0}</span>
-                </div>
-              </div>
-
-              {/* Top stress indicators */}
-              {headlinesData.topIndicators.length > 0 && (
-                <div className="mb-4">
-                  <div className="text-sm font-medium text-slate-600 mb-2">Top Stress Indicators:</div>
-                  <div className="flex flex-wrap gap-2">
-                    {headlinesData.topIndicators.slice(0, 6).map((ind, i) => (
-                      <span key={i} className="px-2 py-1 bg-red-50 text-red-700 text-xs rounded-full border border-red-200">
-                        {ind.indicator} ({ind.count})
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Interpretation */}
-              <div className="space-y-1 mb-4">
-                {headlinesData.interpretation.map((signal, i) => (
-                  <div key={i} className={`text-sm p-2 rounded ${
-                    signal.includes('HIGH') || signal.includes('Top stress')
-                      ? 'bg-amber-50 text-amber-800 border-l-4 border-amber-400'
-                      : 'text-slate-600'
-                  }`}>
-                    {signal}
-                  </div>
-                ))}
-              </div>
-
-              {/* Sample headlines */}
-              <div className="border-t border-slate-200 pt-3">
-                <div className="text-sm font-medium text-slate-600 mb-2">Recent Headlines ({headlinesData.totalArticles} total):</div>
-                <div className="space-y-2 max-h-60 overflow-y-auto">
-                  {headlinesData.articles.slice(0, 8).map((article, i) => (
-                    <a
-                      key={i}
-                      href={article.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="block p-2 bg-slate-50 rounded hover:bg-slate-100 transition-colors"
-                    >
-                      <div className="flex items-start gap-2">
-                        <span className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${
-                          article.sentiment === 'negative' ? 'bg-red-500' :
-                          article.sentiment === 'positive' ? 'bg-green-500' : 'bg-gray-400'
-                        }`}></span>
-                        <div className="flex-1 min-w-0">
-                          <div className="text-sm text-slate-800 line-clamp-2">{article.title}</div>
-                          <div className="flex items-center gap-2 mt-1">
-                            <span className="text-xs text-slate-500">{article.source.name}</span>
-                            <span className="text-xs px-1.5 py-0.5 bg-slate-200 rounded">{article.category}</span>
-                            <ExternalLink className="w-3 h-3 text-slate-400" />
-                          </div>
-                        </div>
-                      </div>
-                    </a>
-                  ))}
-                </div>
-              </div>
             </div>
           )}
 
@@ -2168,14 +1982,14 @@ This model weights mobilizational balance heavily—but requires honest assessme
                 </button>
               </div>
               <div className="mt-3 text-xs text-slate-500">
-                <strong>Signal mapping:</strong> Trends → Public Opinion, Civil Society, Media | Headlines → Judicial, Civil, Media | Op-Eds → Corporate, Media, Executive | Elite Signals → Political, Media | Bluesky → Public Opinion
+                <strong>Signal mapping:</strong> Trends → Public Opinion, Civil Society, Media | Op-Eds → Corporate, Media, Executive | Elite Signals → Political, Media | Bluesky → Public Opinion
               </div>
             </div>
           )}
 
-          {!trendsData && !headlinesData && !opEdData && !eliteSignalsData && !blueskyData && (
+          {!trendsData && !opEdData && !eliteSignalsData && !blueskyData && (
             <p className="text-sm text-slate-500">
-              Enter a country above and click the buttons to analyze search trends, news headlines, op-ed dynamics, and social media discourse for signs of democratic stress. &quot;Elite Signals&quot; is US-specific and tracks GOP coordination and propaganda effectiveness.
+              Enter a country above and click the buttons to analyze search trends, op-ed dynamics, and social media discourse for signs of democratic stress. &quot;Elite Signals&quot; is US-specific and tracks GOP coordination and propaganda effectiveness.
             </p>
           )}
         </div>
@@ -2240,7 +2054,26 @@ This model weights mobilizational balance heavily—but requires honest assessme
                         outcome: c.outcome
                       })),
                       interpretation: comparativeData.interpretation
-                    } : null
+                    } : null,
+                    socialSignals: {
+                      trends: trendsData || null,
+                      opEds: opEdData || null,
+                      eliteSignals: eliteSignalsData || null,
+                      bluesky: blueskyData || null,
+                      marketSignals: marketSignalsData || null
+                    },
+                    modelsUsed: theoreticalModels
+                      .filter(m => activeModels[m.id as keyof typeof activeModels])
+                      .map(m => ({
+                        id: m.id,
+                        name: m.name,
+                        author: m.author,
+                        cluster: m.cluster,
+                        shortDesc: m.shortDesc,
+                        fullDesc: m.fullDesc,
+                        keyWorks: m.keyWorks,
+                        weights: m.weights
+                      }))
                   };
 
                   try {
