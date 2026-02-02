@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cleanObjectStrings } from '@/lib/text-utils';
 
 // Outlet classification for interpreting results
+// TODO: use or remove
 const OUTLET_PROFILES: Record<string, { class: string; affinity: string; type: string }> = {
   // Elite traditional outlets
   'new york times': { class: 'elite', affinity: 'opposition', type: 'traditional' },
